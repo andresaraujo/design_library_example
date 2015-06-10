@@ -13,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
@@ -77,7 +76,7 @@ public class ChatListFragment extends Fragment {
                 public void onClick(View v) {
                     Context context = v.getContext();
                     Intent intent = new Intent(context, ChatDetailsActivity.class);
-                    intent.putExtra(DummyDetailsActivity.EXTRA_NAME, holder.mBoundString);
+                    intent.putExtra(ForecastDetailsActivity.EXTRA_FORECAST, holder.mBoundString);
 
                     context.startActivity(intent);
                 }
