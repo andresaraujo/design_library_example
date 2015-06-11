@@ -18,11 +18,14 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
+
+import com.afollestad.materialdialogs.MaterialDialog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +38,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private DrawerLayout mDrawerLayout;
     private FloatingActionButton mFab;
     private TabLayout mTabLayout;
+
+    Fragment mForecastFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,9 +94,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void setupViewPager(ViewPager viewPager) {
         Adapter adapter = new Adapter(getSupportFragmentManager());
-        adapter.addFragment(new ChatListFragment(), "Calls");
-        adapter.addFragment(new ForecastFragment(), "Chats");
-        adapter.addFragment(new ForecastFragment(), "Contacts");
+        mForecastFragment = new ForecastFragment();
+
+        adapter.addFragment(mForecastFragment, "Forecast");
+        adapter.addFragment(new ChatListFragment(), "Octocats");
+        //adapter.addFragment(new ForecastFragment(), "...");
         viewPager.setAdapter(adapter);
     }
 
@@ -124,11 +131,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void onClick(View view) {
+    public void onClick(final View view) {
         switch (view.getId()) {
             case R.id.fab:
-                Snackbar.make(view, "Fab clicked", Snackbar.LENGTH_LONG)
-                        .setAction("Dismiss", this).show();
+                final SharedPreferences sharedPrefs =
+                        PreferenceManager.getDefaultSharedPreferences(this);
+                String location = sharedPrefs.getString(
+                        getString(R.string.pref_location_key),
+                        getString(R.string.pref_location_default));
+
+                new MaterialDialog.Builder(this)
+                        .title(R.string.pref_location_label)
+                        //.content("Content")
+                        .inputType(InputType.TYPE_CLASS_TEXT)
+                        .input("Location", location, new MaterialDialog.InputCallback() {
+                            @Override
+                            public void onInput(MaterialDialog dialog, CharSequence input) {
+                                SharedPreferences.Editor edit = sharedPrefs.edit();
+                                edit.putString(getString(R.string.pref_location_key), input.toString());
+                                edit.commit();
+                                ((OnPrefLocationListener)mForecastFragment).onPrefLocationChanged();
+
+                                Snackbar.make(view, "Location updated", Snackbar.LENGTH_LONG)
+                                        .setAction("Dismiss", MainActivity.this).show();
+                            }
+                        }).show();
                 break;
         }
     }
@@ -160,5 +187,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public CharSequence getPageTitle(int position) {
             return mFragmentTitles.get(position);
         }
+    }
+
+    public interface OnPrefLocationListener {
+        void onPrefLocationChanged();
     }
 }

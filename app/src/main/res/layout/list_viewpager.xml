@@ -54,6 +54,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="end|bottom"
         android:layout_margin="@dimen/fab_margin"
-        android:src="@mipmap/ic_done" />
+        android:src="@mipmap/ic_marker" />
 
 </android.support.design.widget.CoordinatorLayout>

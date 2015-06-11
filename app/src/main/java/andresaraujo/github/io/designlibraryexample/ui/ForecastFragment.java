@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -30,28 +31,19 @@ import com.koushikdutta.async.future.FutureCallback;
 import com.koushikdutta.ion.Ion;
 import com.koushikdutta.ion.Response;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
+import org.parceler.Parcel;
+import org.parceler.Parcels;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import andresaraujo.github.io.designlibraryexample.R;
+import andresaraujo.github.io.designlibraryexample.domain.ForecastDTO;
 
-/**
- * Created by andres on 9/06/15.
- */
-public class ForecastFragment extends Fragment {
+public class ForecastFragment extends Fragment implements MainActivity.OnPrefLocationListener {
 
     private final String LOG_TAG = ForecastFragment.class.getSimpleName();
 
@@ -160,13 +152,18 @@ public class ForecastFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final RecyclerView recyclerView = (RecyclerView) inflater.inflate(
-                R.layout.fragment_chat_list, container, false);
+                R.layout.fragment_forecast_list, container, false);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(recyclerView.getContext()));
         mAdapter = new ForecastAdapter(getActivity(), new ArrayList<ForecastDTO>());
         recyclerView.setAdapter(mAdapter);
 
         return recyclerView;
+    }
+
+    @Override
+    public void onPrefLocationChanged() {
+        updateWeather();
     }
 
     public  static class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.ViewHolder> {
@@ -190,15 +187,17 @@ public class ForecastFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(final ViewHolder holder, int position) {
-            holder.mBoundString = mValues.get(position).toString();
+            holder.mForecastData = mValues.get(position);
             holder.mTextView.setText(mValues.get(position).toString());
 
-            holder.mView.setOnClickListener(new View.OnClickListener(){
+            final Parcelable wrapped = Parcels.wrap(holder.mForecastData);
+
+            holder.mView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Context context = v.getContext();
                     Intent intent = new Intent(context, ForecastDetailsActivity.class);
-                    intent.putExtra(ForecastDetailsActivity.EXTRA_FORECAST, holder.mBoundString);
+                    intent.putExtra(ForecastDetailsActivity.EXTRA_FORECAST, wrapped);
                     context.startActivity(intent);
                 }
             });
@@ -210,7 +209,7 @@ public class ForecastFragment extends Fragment {
         }
 
         public static class ViewHolder extends RecyclerView.ViewHolder {
-            public String mBoundString;
+            public ForecastDTO mForecastData;
 
             public final View mView;
             public final ImageView mImageView;
@@ -246,18 +245,6 @@ public class ForecastFragment extends Fragment {
             return shortenedDateFormat.format(time);
         }
 
-        /**
-         * Prepare the weather high/lows for presentation.
-         */
-        private String formatHighLows(double high, double low) {
-            // For presentation, assume the user doesn't care about tenths of a degree.
-            long roundedHigh = Math.round(high);
-            long roundedLow = Math.round(low);
-
-            String highLowStr = roundedHigh + "/" + roundedLow;
-            return highLowStr;
-        }
-
         private ForecastDTO[] getWeatherDataFromJson(JsonObject forecastJson, int numDays)
                 throws JSONException {
 
@@ -271,6 +258,9 @@ public class ForecastFragment extends Fragment {
             final String OWM_MAX = "max";
             final String OWM_MIN = "min";
             final String OWM_DESCRIPTION = "main";
+            final String OWM_HUMIDITY = "humidity";
+            final String OWM_PRESSURE = "pressure";
+            final String OWM_WIND = "speed";
 
             //JSONObject forecastJson = new JSONObject(forecastJsonStr);
             JsonArray weatherArray = forecastJson.getAsJsonArray(OWM_LIST);
@@ -300,7 +290,6 @@ public class ForecastFragment extends Fragment {
                 // For now, using the format "Day, description, hi/low"
                 String day;
                 String description;
-                String highAndLow;
 
                 // Get the JSON object representing the day
                 JsonObject dayForecast = weatherArray.get(i).getAsJsonObject();
@@ -323,10 +312,16 @@ public class ForecastFragment extends Fragment {
                 double high = temperatureObject.get(OWM_MAX).getAsDouble();
                 double low = temperatureObject.get(OWM_MIN).getAsDouble();
 
-                highAndLow = formatHighLows(high, low);
+                ForecastDTO forecastDTO = new ForecastDTO(cityName, countryName,
+                        description, day);
 
-                resultDto[i] = new ForecastDTO(cityName, countryName,
-                        description, highAndLow, day);
+                forecastDTO.setHigh((int) Math.round(high));
+                forecastDTO.setLow((int) Math.round(low));
+                forecastDTO.setHumidity(dayForecast.get(OWM_HUMIDITY).getAsInt());
+                forecastDTO.setPressure(dayForecast.get(OWM_PRESSURE).getAsDouble());
+                forecastDTO.setWind(dayForecast.get(OWM_WIND).getAsDouble());
+
+                resultDto[i] = forecastDTO;
             }
 
             for (ForecastDTO o : resultDto) {
@@ -361,29 +356,4 @@ public class ForecastFragment extends Fragment {
             mAdapter.notifyDataSetChanged();
         }
     }
-
-    public class ForecastDTO {
-        final String cityName;
-        final String countryName;
-
-        final String weatherDescription;
-
-        final String highAndLow;
-        final String day;
-
-        public ForecastDTO(String cityName, String countryName,
-                           String weatherDescription, String highAndLow, String day) {
-            this.cityName = cityName;
-            this.countryName = countryName;
-            this.weatherDescription = weatherDescription;
-            this.highAndLow = highAndLow;
-            this.day = day;
-        }
-
-        @Override
-        public String toString() {
-            return day + " - " + weatherDescription + " - " + highAndLow;
-        }
-    }
-
 }
