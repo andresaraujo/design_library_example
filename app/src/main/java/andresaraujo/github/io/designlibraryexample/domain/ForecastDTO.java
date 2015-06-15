@@ -2,7 +2,7 @@ package andresaraujo.github.io.designlibraryexample.domain;
 
 import org.parceler.Parcel;
 
-@Parcel
+@Parcel(Parcel.Serialization.BEAN)
 public class ForecastDTO {
     private String cityName;
     private String countryName;
@@ -50,18 +50,6 @@ public class ForecastDTO {
         this.weatherDescription = weatherDescription;
     }
 
-    public String getHighAndLow() {
-        return high + "/" +low;
-    }
-
-    public String getDay() {
-        return day;
-    }
-
-    public void setDay(String day) {
-        this.day = day;
-    }
-
     public int getHigh() {
         return high;
     }
@@ -76,6 +64,14 @@ public class ForecastDTO {
 
     public void setLow(int low) {
         this.low = low;
+    }
+
+    public String getDay() {
+        return day;
+    }
+
+    public void setDay(String day) {
+        this.day = day;
     }
 
     public int getHumidity() {
@@ -104,6 +100,6 @@ public class ForecastDTO {
 
     @Override
     public String toString() {
-        return day + " - " + weatherDescription + " - " + getHighAndLow();
+        return day + " - " + weatherDescription + " - " + high + "/" + low;
     }
 }

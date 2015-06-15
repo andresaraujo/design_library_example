@@ -115,7 +115,7 @@ public class ForecastFragment extends Fragment implements MainActivity.OnPrefLoc
 
         final Context context = getActivity();
 
-        Uri uri = Uri.parse(FORECAST_BASE_URL).buildUpon()
+        final Uri uri = Uri.parse(FORECAST_BASE_URL).buildUpon()
                 .appendQueryParameter(QUERY_PARAM, location)
                 .appendQueryParameter(FORMAT_PARAM, format)
                 .appendQueryParameter(UNITS_PARAM, units)
@@ -131,7 +131,7 @@ public class ForecastFragment extends Fragment implements MainActivity.OnPrefLoc
                     public void onCompleted(Exception e, Response<JsonObject> result) {
                         if(e != null) {
                             Toast.makeText(context, "Error loading weather", Toast.LENGTH_SHORT).show();
-                            Log.e("Forecast", "Error loading eather", e);
+                            Log.e("Forecast", "Error loading weather: " + uri.toString(), e);
                             return;
                         }
                         Log.d("Forecast", "Request forecast URL: " + result.getRequest().getUri().toString());
